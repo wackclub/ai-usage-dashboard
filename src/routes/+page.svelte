@@ -4,7 +4,7 @@
 	let { data } = $props();
 
 	// Calculate max for chart scaling
-	const maxModelRequests = Math.max(...data.topModels.map(m => m.requestCount), 1);
+	let maxModelRequests = $derived(Math.max(...data.topModels.map(m => m.requestCount), 1));
 </script>
 
 <div class="space-y-6">

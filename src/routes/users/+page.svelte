@@ -33,13 +33,13 @@
 		}, 300);
 	}
 
-	const filterButtons = [
+	let filterButtons = $derived([
 		{ value: 'all', label: 'All', count: data.filterCounts.total },
 		{ value: 'verified', label: 'Verified', count: data.filterCounts.verified },
 		{ value: 'skip_idv', label: 'Skip IDV', count: data.filterCounts.skipIdv },
 		{ value: 'unverified', label: 'Unverified', count: data.filterCounts.unverified },
 		{ value: 'banned', label: 'Banned', count: data.filterCounts.banned }
-	];
+	]);
 
 	const sortOptions = [
 		{ value: 'requests', label: 'Requests' },
