@@ -1,0 +1,26 @@
+/// file: wrangler.jsonc
+{
+  // The name of your project/worker
+  "name": "hcai-dash",
+
+  // Set the compatibility date to the current date for the latest features
+  "compatibility_date": "2026-01-19",
+
+  // Required for SvelteKit Pages deployments to specify the build output directory
+  "pages_build_output_dir": ".svelte-kit/cloudflare",
+
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Optional: Define environment variables
+  // "vars": {
+  //   "API_HOST": "https://api.example.com"
+  // },
+
+  // Optional: Define resource bindings (e.g., D1, R2, KV)
+  // "d1_databases": [
+  //   {
+  //     "binding": "DB",
+  //     "database_id": "your-database-uuid"
+  //   }
+  // ]
+}
