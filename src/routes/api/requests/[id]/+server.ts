@@ -20,9 +20,14 @@ export const GET: RequestHandler = async ({ params }) => {
 			r.ip,
 			u.id as user_id,
 			u.name as user_name,
-			u.email as user_email
+			u.email as user_email,
+			k.id as api_key_id,
+			k.key as api_key,
+			k.name as api_key_name,
+			k.revoked_at as api_key_revoked_at
 		FROM request_logs r
 		JOIN users u ON r.user_id = u.id
+		LEFT JOIN api_keys k ON r.api_key_id = k.id
 		WHERE r.id = ${requestId}::uuid
 	`;
 
@@ -44,6 +49,12 @@ export const GET: RequestHandler = async ({ params }) => {
 		ip: request.ip,
 		userId: request.user_id,
 		userName: request.user_name,
-		userEmail: request.user_email
+		userEmail: request.user_email,
+		apiKey: request.api_key_id ? {
+			id: request.api_key_id,
+			key: request.api_key,
+			name: request.api_key_name,
+			revokedAt: request.api_key_revoked_at
+		} : null
 	});
 };

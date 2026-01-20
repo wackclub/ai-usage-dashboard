@@ -10,6 +10,12 @@
 	let fullRequestData = $state<{
 		request: string;
 		response: string;
+		apiKey?: {
+			id: string;
+			key: string;
+			name: string;
+			revokedAt: string | null;
+		} | null;
 	} | null>(null);
 	let loadingDetails = $state(false);
 
@@ -63,13 +69,32 @@
 				const data = await response.json();
 				fullRequestData = {
 					request: data.request,
-					response: data.response
+					response: data.response,
+					apiKey: data.apiKey
 				};
 			}
 		} catch (error) {
 			console.error('Failed to load request details:', error);
 		} finally {
 			loadingDetails = false;
+		}
+	}
+
+	async function revokeApiKey(keyId: string) {
+		if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) return;
+		
+		try {
+			const response = await fetch(`/api/keys/${keyId}/revoke`, { method: 'POST' });
+			if (response.ok) {
+				if (fullRequestData?.apiKey) {
+					fullRequestData.apiKey.revokedAt = new Date().toISOString();
+				}
+			} else {
+				alert('Failed to revoke API key');
+			}
+		} catch (error) {
+			console.error('Failed to revoke key:', error);
+			alert('Failed to revoke API key');
 		}
 	}
 
@@ -411,11 +436,36 @@
 
 			<!-- User info -->
 			<div class="mb-4 p-3 bg-nord2 rounded-lg">
-				<div class="text-xs text-nord4 mb-1">User</div>
-				<a href="/users/{selectedRequest.userId}" class="text-nord8 hover:text-nord7">
-					{selectedRequest.userName || selectedRequest.userEmail || 'Unknown'} ({selectedRequest.userId.slice(0, 8)}...)
-				</a>
-				<span class="text-nord4 text-xs ml-2">IP: {selectedRequest.ip}</span>
+				<div class="flex items-start justify-between">
+					<div>
+						<div class="text-xs text-nord4 mb-1">User</div>
+						<a href="/users/{selectedRequest.userId}" class="text-nord8 hover:text-nord7">
+							{selectedRequest.userName || selectedRequest.userEmail || 'Unknown'} ({selectedRequest.userId.slice(0, 8)}...)
+						</a>
+						<span class="text-nord4 text-xs ml-2">IP: {selectedRequest.ip}</span>
+					</div>
+					
+					{#if fullRequestData?.apiKey}
+						<div class="text-right">
+							<div class="text-xs text-nord4 mb-1">API Key</div>
+							<div class="flex items-center gap-2 justify-end">
+								<code class="text-xs text-nord5 bg-nord3 px-1.5 py-0.5 rounded">
+									{fullRequestData.apiKey.key}
+								</code>
+								{#if fullRequestData.apiKey.revokedAt}
+									<span class="text-xs text-nord11 font-medium bg-nord11/10 px-1.5 py-0.5 rounded">Revoked</span>
+								{:else}
+									<button 
+										class="text-xs text-nord11 hover:text-nord12 hover:underline"
+										onclick={() => revokeApiKey(fullRequestData!.apiKey!.id)}
+									>
+										Revoke
+									</button>
+								{/if}
+							</div>
+						</div>
+					{/if}
+				</div>
 			</div>
 
 			<!-- Request content -->
