@@ -6,9 +6,20 @@ export const load: PageServerLoad = async ({ url }) => {
 	const filter = url.searchParams.get('filter') || 'all'; // all, banned, verified, skip_idv
 	const sortBy = url.searchParams.get('sort') || 'requests';
 	const sortOrder = url.searchParams.get('order') || 'desc';
+	const timePeriod = url.searchParams.get('period') || 'all'; // all, 24h, 1w, 1m
 	const page = parseInt(url.searchParams.get('page') || '1') || 1;
 	const perPage = 25;
 	const offset = (page - 1) * perPage;
+
+	// Time period filter for stats
+	let timeFilter = '';
+	if (timePeriod === '24h') {
+		timeFilter = "AND timestamp >= NOW() - INTERVAL '24 hours'";
+	} else if (timePeriod === '1w') {
+		timeFilter = "AND timestamp >= NOW() - INTERVAL '7 days'";
+	} else if (timePeriod === '1m') {
+		timeFilter = "AND timestamp >= NOW() - INTERVAL '30 days'";
+	}
 
 	// Build conditions
 	const conditions: string[] = [];
@@ -88,6 +99,7 @@ export const load: PageServerLoad = async ({ url }) => {
 				SUM(cost) as total_cost,
 				MAX(timestamp) as last_request
 			FROM request_logs
+			WHERE 1=1 ${timeFilter}
 			GROUP BY user_id
 		) stats ON u.id = stats.user_id
 		${whereClause}
@@ -132,7 +144,8 @@ export const load: PageServerLoad = async ({ url }) => {
 			search,
 			filter,
 			sortBy,
-			sortOrder
+			sortOrder,
+			timePeriod
 		},
 		pagination: {
 			page,

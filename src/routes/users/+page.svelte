@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { formatNumber, formatRelativeTime, formatCost } from '$lib/utils';
 
@@ -23,7 +23,6 @@
 		goto('/users', { invalidateAll: true });
 	}
 
-	// Debounced search
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	function handleSearchInput(e: Event) {
 		const value = (e.target as HTMLInputElement).value;
@@ -36,7 +35,7 @@
 	let filterButtons = $derived([
 		{ value: 'all', label: 'All', count: data.filterCounts.total },
 		{ value: 'verified', label: 'Verified', count: data.filterCounts.verified },
-		{ value: 'skip_idv', label: 'Skip IDV', count: data.filterCounts.skipIdv },
+		{ value: 'skip_idv', label: 'Bypass', count: data.filterCounts.skipIdv },
 		{ value: 'unverified', label: 'Unverified', count: data.filterCounts.unverified },
 		{ value: 'banned', label: 'Banned', count: data.filterCounts.banned }
 	]);
@@ -49,6 +48,13 @@
 		{ value: 'created', label: 'Created' }
 	];
 
+	const timePeriodOptions = [
+		{ value: 'all', label: 'All Time' },
+		{ value: '24h', label: 'Past 24h' },
+		{ value: '1w', label: 'Past Week' },
+		{ value: '1m', label: 'Past Month' }
+	];
+
 	async function toggleUserStatus(userId: string, field: 'is_banned' | 'skip_idv', currentValue: boolean) {
 		try {
 			const response = await fetch(`/users/${userId}`, {
@@ -57,7 +63,6 @@
 				body: JSON.stringify({ action: field, value: !currentValue })
 			});
 			if (response.ok) {
-				// Refresh the page
 				goto($page.url.toString(), { invalidateAll: true });
 			}
 		} catch (error) {
@@ -68,98 +73,121 @@
 
 <div class="space-y-6">
 	<!-- Header -->
-	<div>
-		<h1 class="text-2xl font-bold text-nord6">Users</h1>
-		<p class="text-nord4 text-sm mt-1">
-			{formatNumber(data.pagination.totalCount)} users
-		</p>
+	<div class="flex items-end justify-between animate-in">
+		<div>
+			<h1 class="text-2xl font-semibold text-primary tracking-tight">User Registry</h1>
+			<p class="text-xs text-tertiary uppercase tracking-widest mt-1">
+				{formatNumber(data.pagination.totalCount)} registered accounts
+			</p>
+		</div>
 	</div>
 
 	<!-- Filters -->
-	<div class="card space-y-4">
+	<div class="card animate-in delay-1">
 		<!-- Search -->
-		<div>
+		<div class="relative mb-4">
+			<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+			</svg>
 			<input
 				type="text"
 				placeholder="Search by name, email, or Slack ID..."
 				value={data.filters.search}
 				oninput={handleSearchInput}
-				class="w-full px-4 py-2 rounded-lg text-sm"
+				class="w-full pl-10 pr-4 py-2.5 text-xs"
 			/>
 		</div>
 
 		<!-- Filter buttons and sort -->
 		<div class="flex flex-wrap items-center justify-between gap-4">
-			<div class="flex gap-1">
+			<div class="flex flex-wrap gap-1">
 				{#each filterButtons as filter}
 					<button
-						class="px-3 py-1.5 text-xs rounded-md transition-colors flex items-center gap-1.5 {data.filters.filter === filter.value
-							? 'bg-nord10 text-nord6'
-							: 'bg-nord2 text-nord4 hover:bg-nord3'}"
+						class="px-3 py-1.5 text-[10px] uppercase tracking-wider font-medium transition-all border {data.filters.filter === filter.value
+							? 'bg-accent text-primary border-accent'
+							: 'bg-transparent text-tertiary border-default hover:border-accent/50 hover:text-secondary'}"
+						style="border-radius: var(--radius);"
 						onclick={() => updateFilter('filter', filter.value)}
 					>
 						{filter.label}
-						<span class="text-[10px] opacity-70">({filter.count})</span>
+						<span class="opacity-60 ml-1">({filter.count})</span>
 					</button>
 				{/each}
 			</div>
 
-			<div class="flex items-center gap-2">
-				<label class="text-xs text-nord4">Sort:</label>
-				<select
-					class="px-3 py-1.5 rounded-md text-sm"
-					value={data.filters.sortBy}
-					onchange={(e) => updateFilter('sort', e.currentTarget.value)}
-				>
-					{#each sortOptions as option}
-						<option value={option.value}>{option.label}</option>
-					{/each}
-				</select>
+			<div class="flex items-center gap-3">
+				<div class="flex items-center gap-2">
+					<label class="text-[10px] text-tertiary uppercase tracking-wider">Period</label>
+					<select
+						class="px-3 py-1.5 text-xs min-w-[100px]"
+						value={data.filters.timePeriod}
+						onchange={(e) => updateFilter('period', e.currentTarget.value)}
+					>
+						{#each timePeriodOptions as option}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="flex items-center gap-2">
+					<label class="text-[10px] text-tertiary uppercase tracking-wider">Sort</label>
+					<select
+						class="px-3 py-1.5 text-xs min-w-[100px]"
+						value={data.filters.sortBy}
+						onchange={(e) => updateFilter('sort', e.currentTarget.value)}
+					>
+						{#each sortOptions as option}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
+				</div>
 				<button
-					class="px-2 py-1.5 rounded-md bg-nord2 hover:bg-nord3 transition-colors"
+					class="w-8 h-8 flex items-center justify-center border border-default hover:border-accent/50 transition-colors"
+					style="border-radius: var(--radius);"
 					onclick={() => updateFilter('order', data.filters.sortOrder === 'desc' ? 'asc' : 'desc')}
 				>
 					{#if data.filters.sortOrder === 'desc'}
-						<svg class="w-4 h-4 text-nord4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+						<svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
 						</svg>
 					{:else}
-						<svg class="w-4 h-4 text-nord4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+						<svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 15l7-7 7 7" />
 						</svg>
 					{/if}
 				</button>
-				<button class="btn btn-secondary text-xs" onclick={clearFilters}>Clear</button>
+				<button class="btn btn-secondary text-[10px]" onclick={clearFilters}>Reset</button>
 			</div>
 		</div>
 	</div>
 
 	<!-- Users grid -->
-	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-		{#each data.users as user}
-			<div class="card card-hover relative">
+	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-in delay-2">
+		{#each data.users as user, i}
+			<div class="card card-hover relative group" style="animation-delay: {i * 30}ms">
 				<!-- Quick action buttons -->
-				<div class="absolute top-3 right-3 flex gap-1">
+				<div class="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 					<button
-						class="p-1.5 rounded-md transition-colors {user.skipIdv 
-							? 'bg-nord15/20 text-nord15 hover:bg-nord15/30' 
-							: 'bg-nord2 text-nord4 hover:bg-nord3'}"
-						onclick={() => toggleUserStatus(user.id, 'skip_idv', user.skipIdv)}
-						title={user.skipIdv ? 'Disable Skip IDV' : 'Enable Skip IDV'}
+						class="w-7 h-7 flex items-center justify-center border transition-all {user.skipIdv 
+							? 'bg-info/10 border-info text-info hover:bg-info/20' 
+							: 'bg-transparent border-default text-tertiary hover:border-info hover:text-info'}"
+						style="border-radius: var(--radius);"
+						onclick={(e) => { e.stopPropagation(); toggleUserStatus(user.id, 'skip_idv', user.skipIdv); }}
+						title={user.skipIdv ? 'Remove IDV Bypass' : 'Enable IDV Bypass'}
 					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+						<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
 						</svg>
 					</button>
 					<button
-						class="p-1.5 rounded-md transition-colors {user.isBanned 
-							? 'bg-nord11/20 text-nord11 hover:bg-nord11/30' 
-							: 'bg-nord2 text-nord4 hover:bg-nord3'}"
-						onclick={() => toggleUserStatus(user.id, 'is_banned', user.isBanned)}
+						class="w-7 h-7 flex items-center justify-center border transition-all {user.isBanned 
+							? 'bg-danger/10 border-danger text-danger hover:bg-danger/20' 
+							: 'bg-transparent border-default text-tertiary hover:border-danger hover:text-danger'}"
+						style="border-radius: var(--radius);"
+						onclick={(e) => { e.stopPropagation(); toggleUserStatus(user.id, 'is_banned', user.isBanned); }}
 						title={user.isBanned ? 'Unban User' : 'Ban User'}
 					>
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+						<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
 						</svg>
 					</button>
 				</div>
@@ -167,17 +195,17 @@
 				<a href="/users/{user.id}" class="block hover:no-underline">
 					<div class="flex items-start gap-3">
 						{#if user.avatar}
-							<img src={user.avatar} alt="" class="w-12 h-12 rounded-full flex-shrink-0" />
+							<img src={user.avatar} alt="" class="w-12 h-12 border border-default flex-shrink-0" style="border-radius: var(--radius);" />
 						{:else}
-							<div class="w-12 h-12 rounded-full bg-nord3 flex items-center justify-center text-nord5 text-lg font-medium flex-shrink-0">
+							<div class="w-12 h-12 bg-hover border border-default flex items-center justify-center text-secondary text-lg font-medium flex-shrink-0" style="border-radius: var(--radius);">
 								{(user.name || user.email || '?').charAt(0).toUpperCase()}
 							</div>
 						{/if}
 						<div class="flex-1 min-w-0">
-							<div class="font-medium text-nord5 truncate">
+							<div class="font-medium text-secondary text-sm truncate group-hover:text-primary transition-colors">
 								{user.name || 'Unknown'}
 							</div>
-							<div class="text-xs text-nord4 truncate">
+							<div class="text-[10px] text-tertiary truncate">
 								{user.email || user.slackId}
 							</div>
 							<!-- Badges -->
@@ -189,44 +217,47 @@
 									<span class="badge badge-success">Verified</span>
 								{/if}
 								{#if user.skipIdv}
-									<span class="badge badge-purple">Skip IDV</span>
+									<span class="badge badge-purple">Bypass</span>
 								{/if}
 							</div>
 						</div>
 					</div>
 
 					<!-- Stats -->
-					<div class="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-nord2">
+					<div class="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-default/50">
 						<div class="text-center">
-							<div class="text-lg font-bold text-nord8">{formatNumber(user.requestCount)}</div>
-							<div class="text-[10px] text-nord4 uppercase">Requests</div>
+							<div class="text-sm font-bold text-accent tabular-nums">{formatNumber(user.requestCount)}</div>
+							<div class="text-[8px] text-tertiary uppercase tracking-wider">Req</div>
 						</div>
 						<div class="text-center">
-							<div class="text-lg font-bold text-nord14">{formatNumber(user.totalTokens)}</div>
-							<div class="text-[10px] text-nord4 uppercase">Tokens</div>
+							<div class="text-sm font-bold text-success tabular-nums">{formatNumber(user.totalTokens)}</div>
+							<div class="text-[8px] text-tertiary uppercase tracking-wider">Tokens</div>
 						</div>
 						<div class="text-center">
-							<div class="text-lg font-bold text-nord15">{formatCost(user.totalCost)}</div>
-							<div class="text-[10px] text-nord4 uppercase">Cost</div>
+							<div class="text-sm font-bold text-info tabular-nums">{formatCost(user.totalCost)}</div>
+							<div class="text-[8px] text-tertiary uppercase tracking-wider">Cost</div>
 						</div>
 						<div class="text-center">
-							<div class="text-xs text-nord5">{formatRelativeTime(user.lastRequest)}</div>
-							<div class="text-[10px] text-nord4 uppercase">Last Active</div>
+							<div class="text-[10px] text-secondary">{formatRelativeTime(user.lastRequest)}</div>
+							<div class="text-[8px] text-tertiary uppercase tracking-wider">Active</div>
 						</div>
 					</div>
 				</a>
 			</div>
 		{:else}
-			<div class="col-span-full text-center py-12 text-nord4">
-				No users found matching your filters.
+			<div class="col-span-full text-center py-16 text-tertiary">
+				<svg class="w-12 h-12 mx-auto mb-4 text-border" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+				</svg>
+				<p class="text-xs uppercase tracking-wider">No users match your filters</p>
 			</div>
 		{/each}
 	</div>
 
 	<!-- Pagination -->
 	{#if data.pagination.totalPages > 1}
-		<div class="flex items-center justify-between">
-			<div class="text-sm text-nord4">
+		<div class="flex items-center justify-between animate-in delay-3">
+			<div class="text-[10px] text-tertiary uppercase tracking-wider">
 				Page {data.pagination.page} of {data.pagination.totalPages}
 			</div>
 			<div class="pagination">
@@ -235,14 +266,14 @@
 					disabled={data.pagination.page <= 1}
 					onclick={() => updateFilter('page', '1')}
 				>
-					First
+					«
 				</button>
 				<button
 					class="page-btn"
 					disabled={data.pagination.page <= 1}
 					onclick={() => updateFilter('page', String(data.pagination.page - 1))}
 				>
-					Prev
+					‹
 				</button>
 				
 				{#each Array.from({ length: Math.min(5, data.pagination.totalPages) }, (_, i) => {
@@ -262,14 +293,14 @@
 					disabled={data.pagination.page >= data.pagination.totalPages}
 					onclick={() => updateFilter('page', String(data.pagination.page + 1))}
 				>
-					Next
+					›
 				</button>
 				<button
 					class="page-btn"
 					disabled={data.pagination.page >= data.pagination.totalPages}
 					onclick={() => updateFilter('page', String(data.pagination.totalPages))}
 				>
-					Last
+					»
 				</button>
 			</div>
 		</div>

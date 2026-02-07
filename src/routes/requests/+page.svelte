@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { formatNumber, formatDuration, formatRelativeTime, truncate, formatCost } from '$lib/utils';
 
@@ -20,18 +20,18 @@
 	let loadingDetails = $state(false);
 
 	const timeFilters = [
-		{ value: 'hour', label: 'Last Hour' },
-		{ value: 'day', label: 'Last Day' },
-		{ value: '7days', label: '7 Days' },
-		{ value: '2weeks', label: '2 Weeks' },
-		{ value: '30days', label: '30 Days' },
-		{ value: 'all', label: 'All Time' }
+		{ value: 'hour', label: '1h' },
+		{ value: 'day', label: '24h' },
+		{ value: '7days', label: '7d' },
+		{ value: '2weeks', label: '2w' },
+		{ value: '30days', label: '30d' },
+		{ value: 'all', label: 'All' }
 	];
 
 	const sortOptions = [
 		{ value: 'timestamp', label: 'Time' },
-		{ value: 'total_tokens', label: 'Total Tokens' },
-		{ value: 'prompt_tokens', label: 'Prompt Tokens' },
+		{ value: 'total_tokens', label: 'Tokens' },
+		{ value: 'prompt_tokens', label: 'Prompt' },
 		{ value: 'completion_tokens', label: 'Completion' },
 		{ value: 'duration', label: 'Duration' },
 		{ value: 'cost', label: 'Cost' },
@@ -46,7 +46,6 @@
 		} else {
 			url.searchParams.delete(key);
 		}
-		// Reset to page 1 when filters change (except for page changes)
 		if (key !== 'page') {
 			url.searchParams.set('page', '1');
 		}
@@ -81,7 +80,7 @@
 	}
 
 	async function revokeApiKey(keyId: string) {
-		if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) return;
+		if (!confirm('Revoke this API key? This cannot be undone.')) return;
 		
 		try {
 			const response = await fetch(`/api/keys/${keyId}/revoke`, { method: 'POST' });
@@ -109,7 +108,6 @@
 		updateFilter('order', newOrder);
 	}
 
-	// Debounced search
 	let searchTimeout: ReturnType<typeof setTimeout>;
 	function handleSearchInput(e: Event) {
 		const value = (e.target as HTMLInputElement).value;
@@ -128,37 +126,41 @@
 
 <div class="space-y-6">
 	<!-- Header -->
-	<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+	<div class="flex items-end justify-between animate-in">
 		<div>
-			<h1 class="text-2xl font-bold text-nord6">Requests</h1>
-			<p class="text-nord4 text-sm mt-1">
-				{formatNumber(data.pagination.totalCount)} requests found
+			<h1 class="text-2xl font-semibold text-primary tracking-tight">Request Log</h1>
+			<p class="text-xs text-tertiary uppercase tracking-widest mt-1">
+				{formatNumber(data.pagination.totalCount)} API calls recorded
 			</p>
 		</div>
 	</div>
 
 	<!-- Filters -->
-	<div class="card space-y-4">
+	<div class="card space-y-4 animate-in delay-1">
 		<!-- Search -->
-		<div>
+		<div class="relative">
+			<svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+			</svg>
 			<input
 				type="text"
-				placeholder="Search model, request, or response..."
+				placeholder="Search model, request, or response content..."
 				value={data.filters.search}
 				oninput={handleSearchInput}
-				class="w-full px-4 py-2 rounded-lg text-sm"
+				class="w-full pl-10 pr-4 py-2.5 text-xs"
 			/>
 		</div>
 
-		<!-- Filter row -->
-		<div class="flex flex-wrap gap-3">
-			<!-- Time filter -->
-			<div class="flex gap-1">
-				{#each timeFilters as filter}
+		<!-- Time filter row -->
+		<div class="flex items-center gap-2">
+			<span class="text-[10px] text-tertiary uppercase tracking-wider">Time</span>
+			<div class="flex">
+				{#each timeFilters as filter, i}
 					<button
-						class="px-3 py-1.5 text-xs rounded-md transition-colors {data.filters.timeFilter === filter.value
-							? 'bg-nord10 text-nord6'
-							: 'bg-nord2 text-nord4 hover:bg-nord3'}"
+						class="px-3 py-1.5 text-[10px] uppercase tracking-wider font-medium transition-all border-y border-r first:border-l {data.filters.timeFilter === filter.value
+							? 'bg-accent text-primary border-accent'
+							: 'bg-transparent text-tertiary border-default hover:text-secondary'}"
+						style="border-radius: {i === 0 ? 'var(--radius) 0 0 var(--radius)' : i === timeFilters.length - 1 ? '0 var(--radius) var(--radius) 0' : '0'};"
 						onclick={() => updateFilter('time', filter.value)}
 					>
 						{filter.label}
@@ -167,13 +169,12 @@
 			</div>
 		</div>
 
-		<!-- Advanced filters row -->
+		<!-- Advanced filters -->
 		<div class="flex flex-wrap items-end gap-4">
-			<!-- Model filter -->
 			<div class="flex flex-col gap-1">
-				<label class="text-xs text-nord4">Model</label>
+				<label class="text-[10px] text-tertiary uppercase tracking-wider">Model</label>
 				<select
-					class="px-3 py-1.5 rounded-md text-sm min-w-[180px]"
+					class="px-3 py-1.5 text-xs min-w-[180px]"
 					value={data.filters.model}
 					onchange={(e) => updateFilter('model', e.currentTarget.value)}
 				>
@@ -184,11 +185,10 @@
 				</select>
 			</div>
 
-			<!-- User filter -->
 			<div class="flex flex-col gap-1">
-				<label class="text-xs text-nord4">User</label>
+				<label class="text-[10px] text-tertiary uppercase tracking-wider">User</label>
 				<select
-					class="px-3 py-1.5 rounded-md text-sm min-w-[180px]"
+					class="px-3 py-1.5 text-xs min-w-[180px]"
 					value={data.filters.userId}
 					onchange={(e) => updateFilter('user', e.currentTarget.value)}
 				>
@@ -199,35 +199,34 @@
 				</select>
 			</div>
 
-			<!-- Token range -->
 			<div class="flex flex-col gap-1">
-				<label class="text-xs text-nord4">Min Tokens</label>
+				<label class="text-[10px] text-tertiary uppercase tracking-wider">Min Tokens</label>
 				<input
 					type="number"
 					placeholder="0"
 					value={data.filters.minTokens || ''}
 					onchange={(e) => updateFilter('minTokens', e.currentTarget.value)}
-					class="px-3 py-1.5 rounded-md text-sm w-24"
+					class="px-3 py-1.5 text-xs w-24"
 				/>
 			</div>
 
 			<div class="flex flex-col gap-1">
-				<label class="text-xs text-nord4">Max Tokens</label>
+				<label class="text-[10px] text-tertiary uppercase tracking-wider">Max Tokens</label>
 				<input
 					type="number"
-					placeholder="any"
+					placeholder="∞"
 					value={data.filters.maxTokens || ''}
 					onchange={(e) => updateFilter('maxTokens', e.currentTarget.value)}
-					class="px-3 py-1.5 rounded-md text-sm w-24"
+					class="px-3 py-1.5 text-xs w-24"
 				/>
 			</div>
 
-			<!-- Sort -->
 			<div class="flex flex-col gap-1">
-				<label class="text-xs text-nord4">Sort by</label>
-				<div class="flex gap-1">
+				<label class="text-[10px] text-tertiary uppercase tracking-wider">Sort</label>
+				<div class="flex">
 					<select
-						class="px-3 py-1.5 rounded-md text-sm"
+						class="px-3 py-1.5 text-xs"
+						style="border-radius: var(--radius) 0 0 var(--radius);"
 						value={data.filters.sortBy}
 						onchange={(e) => updateFilter('sort', e.currentTarget.value)}
 					>
@@ -236,43 +235,39 @@
 						{/each}
 					</select>
 					<button
-						class="px-2 py-1.5 rounded-md bg-nord2 hover:bg-nord3 transition-colors"
+						class="w-8 flex items-center justify-center border border-l-0 border-default hover:border-accent/50 transition-colors"
+						style="border-radius: 0 var(--radius) var(--radius) 0;"
 						onclick={toggleSortOrder}
-						title={data.filters.sortOrder === 'desc' ? 'Descending' : 'Ascending'}
 					>
 						{#if data.filters.sortOrder === 'desc'}
-							<svg class="w-4 h-4 text-nord4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+							<svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7" />
 							</svg>
 						{:else}
-							<svg class="w-4 h-4 text-nord4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+							<svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 15l7-7 7 7" />
 							</svg>
 						{/if}
 					</button>
 				</div>
 			</div>
 
-			<!-- Clear filters -->
-			<button class="btn btn-secondary text-xs" onclick={clearFilters}>
-				Clear
-			</button>
+			<button class="btn btn-secondary text-[10px]" onclick={clearFilters}>Reset</button>
 
-			<!-- Include banned users toggle -->
 			<label class="flex items-center gap-2 cursor-pointer ml-auto">
 				<input
 					type="checkbox"
 					checked={data.filters.includeBanned}
 					onchange={(e) => updateFilter('includeBanned', e.currentTarget.checked ? 'true' : '')}
-					class="w-4 h-4 rounded border-nord3 bg-nord1 text-nord10 focus:ring-nord10 focus:ring-offset-nord0"
+					class="w-4 h-4"
 				/>
-				<span class="text-xs text-nord4">Include banned users</span>
+				<span class="text-[10px] text-tertiary uppercase tracking-wider">Include banned</span>
 			</label>
 		</div>
 	</div>
 
 	<!-- Results table -->
-	<div class="card p-0 overflow-hidden">
+	<div class="card p-0 overflow-hidden animate-in delay-2">
 		<div class="table-container">
 			<table>
 				<thead>
@@ -281,7 +276,7 @@
 						<th>User</th>
 						<th class="text-right">Tokens</th>
 						<th class="text-right">Cost</th>
-						<th class="text-right">Duration</th>
+						<th class="text-right">Latency</th>
 						<th class="text-right">Time</th>
 						<th>Preview</th>
 					</tr>
@@ -289,48 +284,51 @@
 				<tbody>
 					{#each data.requests as request}
 						<tr
-							class="cursor-pointer"
+							class="cursor-pointer group"
 							onclick={() => openRequestModal(request)}
 						>
 							<td>
-								<span class="text-nord8 font-mono text-xs">
+								<code class="text-accent text-[11px] bg-accent/5 px-1.5 py-0.5 border border-accent/20" style="border-radius: var(--radius);">
 									{request.model.split('/').pop()}
-								</span>
+								</code>
 							</td>
 							<td>
 								<a
 									href="/users/{request.userId}"
-									class="text-nord4 hover:text-nord8"
+									class="text-secondary hover:text-accent text-xs"
 									onclick={(e) => e.stopPropagation()}
 								>
 									{request.userName || request.userEmail || 'Unknown'}
 								</a>
 							</td>
 							<td class="text-right">
-								<span class="text-nord14 font-medium">{formatNumber(request.totalTokens)}</span>
-								<span class="text-nord4 text-xs ml-1">
+								<span class="text-success text-xs font-medium tabular-nums">{formatNumber(request.totalTokens)}</span>
+								<span class="text-tertiary text-[10px] ml-1">
 									({formatNumber(request.promptTokens)}+{formatNumber(request.completionTokens)})
 								</span>
 							</td>
-							<td class="text-right text-nord14 font-mono text-xs">
-								{formatCost(request.cost)}
+							<td class="text-right">
+								<span class="text-success text-[11px] tabular-nums font-mono">{formatCost(request.cost)}</span>
 							</td>
-							<td class="text-right text-nord13">
-								{formatDuration(request.duration)}
+							<td class="text-right">
+								<span class="text-warning text-xs tabular-nums">{formatDuration(request.duration)}</span>
 							</td>
-							<td class="text-right text-nord4 text-xs whitespace-nowrap">
+							<td class="text-right text-tertiary text-[10px] whitespace-nowrap">
 								{formatRelativeTime(request.timestamp)}
 							</td>
-							<td class="max-w-xs">
-								<span class="text-nord4 text-xs">
-									{truncate(request.requestPreview, 60)}
+							<td class="max-w-[200px]">
+								<span class="text-tertiary text-[11px] truncate block">
+									{truncate(request.requestPreview, 50)}
 								</span>
 							</td>
 						</tr>
 					{:else}
 						<tr>
-							<td colspan="7" class="text-center py-8 text-nord4">
-								No requests found matching your filters.
+							<td colspan="7" class="text-center py-12">
+								<svg class="w-12 h-12 mx-auto mb-4 text-border" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+								</svg>
+								<p class="text-xs text-tertiary uppercase tracking-wider">No requests match your filters</p>
 							</td>
 						</tr>
 					{/each}
@@ -341,8 +339,8 @@
 
 	<!-- Pagination -->
 	{#if data.pagination.totalPages > 1}
-		<div class="flex items-center justify-between">
-			<div class="text-sm text-nord4">
+		<div class="flex items-center justify-between animate-in delay-3">
+			<div class="text-[10px] text-tertiary uppercase tracking-wider">
 				Page {data.pagination.page} of {data.pagination.totalPages}
 			</div>
 			<div class="pagination">
@@ -351,14 +349,14 @@
 					disabled={data.pagination.page <= 1}
 					onclick={() => updateFilter('page', '1')}
 				>
-					First
+					«
 				</button>
 				<button
 					class="page-btn"
 					disabled={data.pagination.page <= 1}
 					onclick={() => updateFilter('page', String(data.pagination.page - 1))}
 				>
-					Prev
+					‹
 				</button>
 				
 				{#each Array.from({ length: Math.min(5, data.pagination.totalPages) }, (_, i) => {
@@ -378,14 +376,14 @@
 					disabled={data.pagination.page >= data.pagination.totalPages}
 					onclick={() => updateFilter('page', String(data.pagination.page + 1))}
 				>
-					Next
+					›
 				</button>
 				<button
 					class="page-btn"
 					disabled={data.pagination.page >= data.pagination.totalPages}
 					onclick={() => updateFilter('page', String(data.pagination.totalPages))}
 				>
-					Last
+					»
 				</button>
 			</div>
 		</div>
@@ -396,67 +394,76 @@
 {#if showModal && selectedRequest}
 	<div class="modal-backdrop" onclick={closeModal}>
 		<div class="modal w-full max-w-4xl p-6" onclick={(e) => e.stopPropagation()}>
-			<div class="flex items-start justify-between mb-4">
+			<div class="flex items-start justify-between mb-6">
 				<div>
-					<h2 class="text-lg font-semibold text-nord6">Request Details</h2>
-					<p class="text-sm text-nord4 mt-1">
-						{selectedRequest.model} - {formatRelativeTime(selectedRequest.timestamp)}
+					<h2 class="text-lg font-semibold text-primary">Request Details</h2>
+					<p class="text-xs text-tertiary mt-1">
+						<code class="text-accent">{selectedRequest.model}</code>
+						<span class="mx-2">·</span>
+						{formatRelativeTime(selectedRequest.timestamp)}
 					</p>
 				</div>
-				<button class="text-nord4 hover:text-nord6" onclick={closeModal}>
-					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+				<button
+					class="w-8 h-8 flex items-center justify-center border border-default hover:border-danger hover:text-danger transition-colors"
+					style="border-radius: var(--radius);"
+					onclick={closeModal}
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
 					</svg>
 				</button>
 			</div>
 
 			<!-- Stats row -->
-			<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-				<div class="bg-nord2 rounded-lg p-3 text-center">
-					<div class="text-xl font-bold text-nord14">{formatNumber(selectedRequest.totalTokens)}</div>
-					<div class="text-xs text-nord4">Total Tokens</div>
+			<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+				<div class="bg-tertiary border border-default p-3 text-center" style="border-radius: var(--radius);">
+					<div class="text-xl font-bold text-success tabular-nums">{formatNumber(selectedRequest.totalTokens)}</div>
+					<div class="text-[9px] text-tertiary uppercase tracking-widest">Total Tokens</div>
 				</div>
-				<div class="bg-nord2 rounded-lg p-3 text-center">
-					<div class="text-xl font-bold text-nord8">{formatNumber(selectedRequest.promptTokens)}</div>
-					<div class="text-xs text-nord4">Prompt</div>
+				<div class="bg-tertiary border border-default p-3 text-center" style="border-radius: var(--radius);">
+					<div class="text-xl font-bold text-accent tabular-nums">{formatNumber(selectedRequest.promptTokens)}</div>
+					<div class="text-[9px] text-tertiary uppercase tracking-widest">Prompt</div>
 				</div>
-				<div class="bg-nord2 rounded-lg p-3 text-center">
-					<div class="text-xl font-bold text-nord15">{formatNumber(selectedRequest.completionTokens)}</div>
-					<div class="text-xs text-nord4">Completion</div>
+				<div class="bg-tertiary border border-default p-3 text-center" style="border-radius: var(--radius);">
+					<div class="text-xl font-bold text-info tabular-nums">{formatNumber(selectedRequest.completionTokens)}</div>
+					<div class="text-[9px] text-tertiary uppercase tracking-widest">Completion</div>
 				</div>
-				<div class="bg-nord2 rounded-lg p-3 text-center">
-					<div class="text-xl font-bold text-nord13">{formatDuration(selectedRequest.duration)}</div>
-					<div class="text-xs text-nord4">Duration</div>
+				<div class="bg-tertiary border border-default p-3 text-center" style="border-radius: var(--radius);">
+					<div class="text-xl font-bold text-warning tabular-nums">{formatDuration(selectedRequest.duration)}</div>
+					<div class="text-[9px] text-tertiary uppercase tracking-widest">Latency</div>
 				</div>
-				<div class="bg-nord2 rounded-lg p-3 text-center">
-					<div class="text-xl font-bold text-nord14">{formatCost(selectedRequest.cost)}</div>
-					<div class="text-xs text-nord4">Cost</div>
+				<div class="bg-tertiary border border-default p-3 text-center" style="border-radius: var(--radius);">
+					<div class="text-xl font-bold text-success tabular-nums">{formatCost(selectedRequest.cost)}</div>
+					<div class="text-[9px] text-tertiary uppercase tracking-widest">Cost</div>
 				</div>
 			</div>
 
 			<!-- User info -->
-			<div class="mb-4 p-3 bg-nord2 rounded-lg">
+			<div class="mb-6 p-4 bg-tertiary border border-default" style="border-radius: var(--radius);">
 				<div class="flex items-start justify-between">
 					<div>
-						<div class="text-xs text-nord4 mb-1">User</div>
-						<a href="/users/{selectedRequest.userId}" class="text-nord8 hover:text-nord7">
-							{selectedRequest.userName || selectedRequest.userEmail || 'Unknown'} ({selectedRequest.userId.slice(0, 8)}...)
+						<div class="text-[9px] text-tertiary uppercase tracking-widest mb-1">User</div>
+						<a href="/users/{selectedRequest.userId}" class="text-accent hover:text-primary text-sm">
+							{selectedRequest.userName || selectedRequest.userEmail || 'Unknown'}
 						</a>
-						<span class="text-nord4 text-xs ml-2">IP: {selectedRequest.ip}</span>
+						<span class="text-tertiary text-xs ml-2">
+							<code class="text-[10px] bg-hover px-1 py-0.5" style="border-radius: var(--radius);">{selectedRequest.userId.slice(0, 8)}...</code>
+						</span>
+						<span class="text-tertiary text-[10px] ml-2">IP: {selectedRequest.ip}</span>
 					</div>
 					
 					{#if fullRequestData?.apiKey}
 						<div class="text-right">
-							<div class="text-xs text-nord4 mb-1">API Key</div>
+							<div class="text-[9px] text-tertiary uppercase tracking-widest mb-1">API Key</div>
 							<div class="flex items-center gap-2 justify-end">
-								<code class="text-xs text-nord5 bg-nord3 px-1.5 py-0.5 rounded">
+								<code class="text-[10px] text-secondary bg-hover px-2 py-0.5" style="border-radius: var(--radius);">
 									{fullRequestData.apiKey.key}
 								</code>
 								{#if fullRequestData.apiKey.revokedAt}
-									<span class="text-xs text-nord11 font-medium bg-nord11/10 px-1.5 py-0.5 rounded">Revoked</span>
+									<span class="badge badge-danger">Revoked</span>
 								{:else}
 									<button 
-										class="text-xs text-nord11 hover:text-nord12 hover:underline"
+										class="text-[10px] text-danger hover:text-primary uppercase tracking-wider"
 										onclick={() => revokeApiKey(fullRequestData!.apiKey!.id)}
 									>
 										Revoke
@@ -471,29 +478,29 @@
 			<!-- Request content -->
 			<div class="space-y-4">
 				<div>
-					<div class="text-xs text-nord4 uppercase tracking-wide mb-2">Request</div>
+					<div class="text-[9px] text-tertiary uppercase tracking-widest mb-2">Request</div>
 					{#if loadingDetails}
-						<div class="bg-nord0 border border-nord2 rounded-lg p-4 flex items-center justify-center">
-							<div class="spinner"></div>
-							<span class="ml-2 text-nord4 text-sm">Loading...</span>
+						<div class="bg-primary border border-default p-6 flex items-center justify-center" style="border-radius: var(--radius);">
+							<div class="spinner mr-3"></div>
+							<span class="text-tertiary text-xs uppercase tracking-wider">Loading...</span>
 						</div>
 					{:else if fullRequestData}
-						<pre class="bg-nord0 border border-nord2 rounded-lg p-4 text-sm text-nord5 overflow-auto max-h-48 whitespace-pre-wrap">{fullRequestData.request}</pre>
+						<pre class="bg-primary border border-default p-4 text-xs text-secondary overflow-auto max-h-48 whitespace-pre-wrap font-mono" style="border-radius: var(--radius);">{fullRequestData.request}</pre>
 					{:else}
-						<pre class="bg-nord0 border border-nord2 rounded-lg p-4 text-sm text-nord5 overflow-auto max-h-48 whitespace-pre-wrap">{selectedRequest.requestPreview}...</pre>
+						<pre class="bg-primary border border-default p-4 text-xs text-secondary overflow-auto max-h-48 whitespace-pre-wrap font-mono" style="border-radius: var(--radius);">{selectedRequest.requestPreview}...</pre>
 					{/if}
 				</div>
 				<div>
-					<div class="text-xs text-nord4 uppercase tracking-wide mb-2">Response</div>
+					<div class="text-[9px] text-tertiary uppercase tracking-widest mb-2">Response</div>
 					{#if loadingDetails}
-						<div class="bg-nord0 border border-nord2 rounded-lg p-4 flex items-center justify-center">
-							<div class="spinner"></div>
-							<span class="ml-2 text-nord4 text-sm">Loading...</span>
+						<div class="bg-primary border border-default p-6 flex items-center justify-center" style="border-radius: var(--radius);">
+							<div class="spinner mr-3"></div>
+							<span class="text-tertiary text-xs uppercase tracking-wider">Loading...</span>
 						</div>
 					{:else if fullRequestData}
-						<pre class="bg-nord0 border border-nord2 rounded-lg p-4 text-sm text-nord5 overflow-auto max-h-64 whitespace-pre-wrap">{fullRequestData.response}</pre>
+						<pre class="bg-primary border border-default p-4 text-xs text-secondary overflow-auto max-h-64 whitespace-pre-wrap font-mono" style="border-radius: var(--radius);">{fullRequestData.response}</pre>
 					{:else}
-						<div class="bg-nord0 border border-nord2 rounded-lg p-4 text-sm text-nord4 italic">
+						<div class="bg-primary border border-default p-6 text-xs text-tertiary italic text-center" style="border-radius: var(--radius);">
 							Loading response...
 						</div>
 					{/if}

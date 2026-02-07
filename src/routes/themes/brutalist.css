@@ -1,0 +1,239 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEME: BRUTALIST EDITORIAL
+   High contrast - Bold typography, sharp geometry, newspaper-inspired
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+	--bg-primary: #f5f5f0;
+	--bg-secondary: #ffffff;
+	--bg-tertiary: #ebebeb;
+	--bg-elevated: #ffffff;
+	--bg-hover: #e5e5e0;
+	--bg-inverse: #0a0a0a;
+	
+	--accent-primary: #0a0a0a;
+	--accent-primary-dim: #333333;
+	--accent-primary-glow: rgba(0, 0, 0, 0.05);
+	--accent-secondary: #ff3333;
+	--accent-secondary-glow: rgba(255, 51, 51, 0.1);
+	
+	--success: #0a0a0a;
+	--warning: #0a0a0a;
+	--danger: #ff3333;
+	--info: #0a0a0a;
+	
+	--text-primary: #0a0a0a;
+	--text-secondary: #333333;
+	--text-tertiary: #666666;
+	
+	--border-primary: #0a0a0a;
+	--border-secondary: #cccccc;
+	
+	--font-display: 'Playfair Display', 'Times New Roman', Georgia, serif;
+	--font-body: 'IBM Plex Mono', 'Courier New', monospace;
+	
+	--radius-sm: 0;
+	--radius-md: 0;
+	--radius-lg: 0;
+}
+
+body {
+	font-family: var(--font-body);
+	background: var(--bg-primary);
+	color: var(--text-secondary);
+	font-size: 13px;
+	letter-spacing: -0.01em;
+}
+
+h1, h2, h3 {
+	font-family: var(--font-display);
+	font-weight: 700;
+	letter-spacing: -0.03em;
+}
+
+.card {
+	background: var(--bg-secondary);
+	border: 2px solid var(--border-primary);
+	padding: 1.5rem;
+}
+
+.card-hover:hover {
+	background: var(--bg-inverse);
+	color: var(--bg-secondary);
+}
+
+.card-hover:hover * {
+	color: inherit;
+}
+
+.stat-card {
+	background: var(--bg-secondary);
+	border: 2px solid var(--border-primary);
+	padding: 1.5rem;
+	position: relative;
+}
+
+.stat-card::before {
+	content: '';
+	position: absolute;
+	top: -2px;
+	left: -2px;
+	right: -2px;
+	height: 8px;
+	background: var(--bg-inverse);
+}
+
+.stat-value {
+	font-family: var(--font-display);
+	font-size: 3rem;
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: -0.04em;
+}
+
+.stat-label {
+	font-size: 9px;
+	text-transform: uppercase;
+	letter-spacing: 0.2em;
+	margin-top: 0.75rem;
+	border-top: 1px solid var(--border-secondary);
+	padding-top: 0.5rem;
+}
+
+.data-bar {
+	height: 3px;
+	background: var(--border-secondary);
+}
+
+.data-bar-fill {
+	background: var(--bg-inverse);
+}
+
+.badge {
+	border: 1px solid currentColor;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	font-size: 9px;
+	padding: 0.25rem 0.5rem;
+}
+
+.badge-danger {
+	background: var(--danger);
+	border-color: var(--danger);
+	color: white;
+}
+
+.btn {
+	border: 2px solid var(--border-primary);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	transition: all 0.1s ease;
+}
+
+.btn-primary {
+	background: var(--bg-inverse);
+	color: var(--bg-secondary);
+}
+
+.btn-primary:hover {
+	background: var(--bg-secondary);
+	color: var(--bg-inverse);
+}
+
+.btn-danger {
+	background: var(--danger);
+	border-color: var(--danger);
+	color: white;
+}
+
+.btn-danger:hover {
+	background: white;
+	color: var(--danger);
+}
+
+table {
+	border: 2px solid var(--border-primary);
+}
+
+table th {
+	background: var(--bg-inverse);
+	color: var(--bg-secondary);
+	font-family: var(--font-body);
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.15em;
+	font-size: 9px;
+	padding: 1rem;
+	border-bottom: none;
+}
+
+table td {
+	border-bottom: 1px solid var(--border-secondary);
+	padding: 1rem;
+}
+
+table tr:hover td {
+	background: var(--bg-tertiary);
+}
+
+/* Navigation brutalist style */
+nav {
+	border-bottom: 3px solid var(--border-primary);
+}
+
+a {
+	color: var(--text-primary);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	text-decoration-thickness: 1px;
+}
+
+a:hover {
+	text-decoration-thickness: 2px;
+}
+
+/* Divider lines */
+.divider {
+	height: 3px;
+	background: repeating-linear-gradient(
+		90deg,
+		var(--border-primary),
+		var(--border-primary) 4px,
+		transparent 4px,
+		transparent 8px
+	);
+}
+
+/* Pull quote style for stats */
+.highlight-stat {
+	font-family: var(--font-display);
+	font-size: 5rem;
+	font-weight: 700;
+	line-height: 0.9;
+	letter-spacing: -0.05em;
+}
+
+/* Grid lines background */
+.grid-bg {
+	background-image: 
+		linear-gradient(var(--border-secondary) 1px, transparent 1px),
+		linear-gradient(90deg, var(--border-secondary) 1px, transparent 1px);
+	background-size: 20px 20px;
+}
+
+/* Red accent for important items */
+.accent-red {
+	color: var(--danger);
+}
+
+/* Offset box shadow effect */
+.shadow-brutal {
+	box-shadow: 4px 4px 0 var(--border-primary);
+}
+
+.shadow-brutal:hover {
+	box-shadow: 6px 6px 0 var(--border-primary);
+	transform: translate(-2px, -2px);
+}
